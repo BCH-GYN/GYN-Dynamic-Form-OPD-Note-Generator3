@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GYN Dynamic Form V4 — GitHub Pages</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "Noto Sans Thai", "Leelawadee UI", sans-serif;
+    }
+    .section-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      background: white;
+      box-shadow: 0 8px 24px rgba(15,23,42,.04);
+    }
+    .field-label { font-size: .78rem; font-weight: 700; color: #475569; }
+    .input {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: .75rem;
+      padding: .65rem .75rem;
+      background: white;
+      outline: none;
+    }
+    .input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.12); }
+    .required-mark { color:#ef4444; font-weight:900; margin-left:.15rem; }
+    .required-error {
+      border-color:#ef4444 !important;
+      box-shadow:0 0 0 3px rgba(239,68,68,.12) !important;
+    }
+    .required-helper {
+      display:none;
+      margin-top:.3rem;
+      font-size:.7rem;
+      line-height:1.2;
+      font-weight:700;
+      color:#dc2626;
+    }
+    .required-error + .required-helper { display:block; }
+    html.dark .required-helper { color:#fca5a5; }
+
+    .pill-check input { display: none; }
+    .pill-check span {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 9999px;
+      padding: .45rem .72rem;
+      font-size: .83rem;
+      background: #fff;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+    .pill-check input:checked + span {
+      background: #ccfbf1;
+      border-color: #14b8a6;
+      color: #0f766e;
+      font-weight: 700;
+    }
+    .danger-pill input:checked + span {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #b91c1c;
+    }
+    .note-pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      line-height: 1.55;
+    }
+    .sticky-note { position: sticky; top: 88px; }
+    @media (max-width: 1023px) { .sticky-note { position: static; } }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        background: white;
+        padding: 0;
+      }
+      @page { size: A4 portrait; margin: 12mm; }
+    }
+  </style>
+<script>
+  // Default theme = dark. If user explicitly selected light before, restore it.
+  (() => {
+    const saved = localStorage.getItem('gyn_theme');
+    const useDark = saved !== 'light';
+    document.documentElement.classList.toggle('dark', useDark);
+  })();
+</script>
+<style>
+  /* Dark mode overrides for the existing Tailwind utility-based layout */
+  html.dark body { background:#020617 !important; color:#e2e8f0 !important; }
+  html.dark header { background:rgba(15,23,42,.96) !important; border-color:#334155 !important; }
+  html.dark .section-card { background:#0f172a !important; border-color:#334155 !important; box-shadow:0 10px 30px rgba(0,0,0,.28); }
+  html.dark .section-card > div[class*="border-b"] { border-color:#1e293b !important; }
+  html.dark .input {
+    background:#0b1220 !important; color:#e2e8f0 !important; border-color:#475569 !important;
+  }
+  html.dark .input::placeholder { color:#64748b !important; }
+  html.dark .field-label, html.dark .text-slate-500, html.dark .text-slate-400 { color:#94a3b8 !important; }
+  html.dark .text-slate-950, html.dark .text-slate-900, html.dark .text-slate-800,
+  html.dark .text-slate-700, html.dark .text-slate-600 { color:#e2e8f0 !important; }
+  html.dark .bg-white { background:#0f172a !important; }
+  html.dark .bg-slate-50 { background:#020617 !important; }
+  html.dark .bg-slate-100 { background:#1e293b !important; }
+  html.dark .border-slate-100, html.dark .border-slate-200 { border-color:#334155 !important; }
+  html.dark .hover\:bg-slate-50:hover, html.dark .hover\:bg-slate-200:hover { background:#1e293b !important; }
+  html.dark .pill-check span { background:#0b1220; border-color:#475569; color:#cbd5e1; }
+  html.dark .pill-check input:checked + span {
+    background:#134e4a; border-color:#2dd4bf; color:#ccfbf1;
+  }
+  html.dark .danger-pill input:checked + span {
+    background:#450a0a; border-color:#ef4444; color:#fecaca;
+  }
+  html.dark #workflowHint { background:#042f2e !important; color:#ccfbf1 !important; }
+  html.dark #treatmentSet .pill-check span { background:#0b1220 !important; }
+  html.dark .bg-amber-50 { background:#2b2110 !important; }
+  html.dark .text-amber-900 { color:#fde68a !important; }
+  html.dark .border-amber-200 { border-color:#92400e !important; }
+  html.dark #recordsList > div { background:#0b1220; border-color:#334155; }
+  html.dark #notePreview {
+    background:#020617 !important; color:#f8fafc !important; border-color:#475569 !important;
+    caret-color:#5eead4;
+  }
+  html.dark #notePreview:focus { border-color:#14b8a6 !important; box-shadow:0 0 0 3px rgba(20,184,166,.16); }
+  html.dark select option { background:#0b1220; color:#e2e8f0; }
+</style>
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header class="no-print sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <div class="flex items-center gap-3">
+        <div class="grid h-10 w-10 place-items-center rounded-xl bg-teal-600 font-black text-white">GYN</div>
+        <div>
+          <h1 class="text-lg font-black tracking-tight text-slate-950">GYN Dynamic Form & OPD Note Generator</h1>
+          <p class="text-xs text-slate-500">GitHub Pages • LocalStorage CRUD • Real-time editable OPD Note • A4 print</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="modeBadge" class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">GitHub Pages / LocalStorage</span>
+        <button id="themeToggle" onclick="toggleTheme()" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-black hover:bg-slate-50" title="Dark / Light mode">☀️ Light</button>
+        <button onclick="resetFormConfirm()" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold hover:bg-slate-50">New / Clear</button>
+        <button onclick="saveRecord()" class="rounded-xl bg-teal-600 px-4 py-2 text-sm font-black text-white hover:bg-teal-700">Save</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
+    <input type="hidden" id="recordId" />
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <!-- LEFT -->
+      <section class="space-y-5">
+        <div class="section-card overflow-hidden">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 class="text-base font-black">1. Patient / Visit</h2>
+                <p class="mt-1 text-xs text-slate-500">ข้อมูลพื้นฐานสำหรับสร้าง OPD note</p>
+              </div>
+              <button onclick="fillToday()" class="no-print text-xs font-bold text-teal-700 hover:underline">วันนี้</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3">
+            <label>
+              <span class="field-label">วันที่ตรวจ</span>
+              <input id="visitDate" type="date" class="input mt-1" />
+            </label>
+            <label>
+              <span class="field-label">HN <span class="required-mark">*</span></span>
+              <input id="hn" class="input mt-1" placeholder="HN" autocomplete="off" required />
+              <span class="required-helper">กรุณากรอก HN</span>
+            </label>
+            <label class="sm:col-span-2 xl:col-span-1">
+              <span class="field-label">ชื่อ-สกุล <span class="required-mark">*</span></span>
+              <input id="patientName" class="input mt-1" placeholder="ชื่อผู้ป่วย" autocomplete="off" required />
+              <span class="required-helper">กรุณากรอกชื่อ-สกุล</span>
+            </label>
+            <label>
+              <span class="field-label">อายุ <span class="required-mark">*</span></span>
+              <input id="age" type="number" min="0" max="120" class="input mt-1" placeholder="ปี" required />
+              <span class="required-helper">กรุณากรอกอายุ 0–120 ปี</span>
+            </label>
+            <label>
+              <span class="field-label">G / P</span>
+              <input id="gp" class="input mt-1" placeholder="เช่น G2P1" />
+            </label>
+            <label>
+              <span class="field-label">LMP</span>
+              <input id="lmp" type="date" class="input mt-1" />
+            </label>
+            <label class="sm:col-span-2">
+              <span class="field-label">Chief complaint</span>
+              <input id="chiefComplaint" class="input mt-1" placeholder="อาการสำคัญ + ระยะเวลา" />
+            </label>
+            <label>
+              <span class="field-label">แพทย์ผู้ตรวจ <span class="required-mark">*</span></span>
+              <input id="doctor" class="input mt-1" placeholder="แพทย์ผู้ตรวจ" autocomplete="off" required />
+              <span class="required-helper">กรุณากรอกแพทย์ผู้ตรวจ</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-card overflow-hidden">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <h2 class="text-base font-black text-red-700">2. Triage / Red Flags</h2>
+            <p class="mt-1 text-xs text-slate-500">ใช้เป็น checklist ก่อนเข้าสู่ workflow</p>
+          </div>
+          <div class="p-5">
+            <div id="redFlags" class="flex flex-wrap gap-2"></div>
+            <label class="mt-4 block">
+              <span class="field-label">Triage note</span>
+              <textarea id="triageNote" rows="2" class="input mt-1" placeholder="เช่น stable, no acute abdomen"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-card overflow-hidden">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <h2 class="text-base font-black">3. เลือก Clinical Workflow</h2>
+            <p class="mt-1 text-xs text-slate-500">ฟอร์มด้านล่างจะเปลี่ยนตามปัญหาหลัก</p>
+          </div>
+          <div class="p-5">
+            <select id="workflow" class="input font-bold text-teal-800"></select>
+            <div id="workflowHint" class="mt-3 rounded-xl bg-teal-50 px-4 py-3 text-sm text-teal-900"></div>
+          </div>
+        </div>
+
+        <div id="dynamicSections" class="space-y-5"></div>
+
+        <div class="section-card overflow-hidden">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h2 class="text-base font-black">Additional Fields</h2>
+                <p class="mt-1 text-xs text-slate-500">เพิ่มข้อมูลที่ไม่ได้อยู่ใน template</p>
+              </div>
+              <button onclick="addExtraSlot()" class="no-print rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold hover:bg-slate-200">+ Add</button>
+            </div>
+          </div>
+          <div id="extraSlots" class="space-y-3 p-5"></div>
+        </div>
+
+        <div class="section-card overflow-hidden">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 class="text-base font-black">Diagnosis <span class="required-mark">*</span></h2>
+                <p class="mt-1 text-xs text-slate-500">ต้องมีอย่างน้อย 1 อย่าง: Diagnosis / Impression หรือ Protocol Diagnosis</p>
+              </div>
+              <div class="no-print flex flex-wrap items-center gap-2">
+                <button type="button" onclick="addCustomDiagnosis()" class="rounded-lg bg-teal-600 px-3 py-2 text-xs font-black text-white hover:bg-teal-700">+ เพิ่ม Diagnosis</button>
+                <a href="https://bch-gyn.github.io/Gynecology-Clinic-Protocol/" target="_blank" rel="noopener"
+                   class="text-xs font-bold text-teal-700 hover:underline">เปิด Protocol ↗</a>
+              </div>
+            </div>
+          </div>
+          <div class="grid gap-4 p-5">
+            <label>
+              <span class="field-label">Protocol Diagnosis</span>
+              <select id="diagnosisProtocol" class="input mt-1"></select>
+              <span id="diagnosisProtocolHelper" class="required-helper">เลือก Protocol Diagnosis หรือกรอก Diagnosis / Impression</span>
+            </label>
+            <label>
+              <span class="field-label">Diagnosis / Impression</span>
+              <textarea id="diagnosis" rows="2" class="input mt-1" placeholder="Final / working diagnosis"></textarea>
+              <span id="diagnosisHelper" class="required-helper">กรอก Diagnosis / Impression หรือเลือก Protocol Diagnosis</span>
+            </label>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label>
+                <span class="field-label">ICD-10 (optional)</span>
+                <input id="diagnosisIcd10" class="input mt-1" placeholder="เช่น E28.2" />
+              </label>
+              <label>
+                <span class="field-label">Diagnosis status</span>
+                <select id="diagnosisStatus" class="input mt-1">
+                  <option value="">—</option>
+                  <option>Working diagnosis</option>
+                  <option>Confirmed</option>
+                  <option>Differential diagnosis</option>
+                  <option>Rule out</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              <span class="field-label">Differential / Secondary diagnosis</span>
+              <textarea id="differentialDiagnosis" rows="2" class="input mt-1" placeholder="ใส่ differential หรือ diagnosis อื่นเพิ่มเติม"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-card overflow-hidden">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 class="text-base font-black">Treatment Set</h2>
+                <p class="mt-1 text-xs text-slate-500">Framework จาก Gynecology Clinic Protocol — เลือกเฉพาะรายการที่ใช้จริง</p>
+              </div>
+              <span id="treatmentCount" class="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-700">0 รายการ</span>
+            </div>
+          </div>
+          <div class="p-5">
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+              Treatment Set เป็น framework สำหรับแพทย์ โปรดทบทวน contraindication, pregnancy status, allergy, renal/hepatic function และ local guideline ก่อนใช้ทุกครั้ง
+            </div>
+            <div id="treatmentSet" class="space-y-5"></div>
+
+            <div class="mt-5 border-t border-slate-200 pt-5">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-black text-slate-800">เพิ่มยา / Treatment เอง</h3>
+                  <p class="mt-1 text-xs text-slate-500">ใช้เมื่อไม่มีใน Protocol หรือกรอบยา รพ.บางจาก และสามารถระบุวิธีใช้ได้เอง</p>
+                </div>
+                <button type="button" onclick="addCustomTreatmentRow()" class="no-print rounded-lg bg-slate-100 px-3 py-2 text-xs font-black hover:bg-slate-200">+ เพิ่มรายการ</button>
+              </div>
+              <div id="customTreatmentRows" class="space-y-3"></div>
+            </div>
+
+            <label class="mt-5 block">
+              <span class="field-label">Treatment / Prescription details</span>
+              <textarea id="treatmentDetails" rows="4" class="input mt-1" placeholder="Dose / route / frequency / duration / procedure / counseling — แก้ไขได้"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-card overflow-hidden">
+          <div class="border-b border-slate-100 px-5 py-4">
+            <h2 class="text-base font-black">Assessment / Plan / Follow-up</h2>
+          </div>
+          <div class="grid gap-4 p-5">
+            <label>
+              <span class="field-label">Assessment / Impression</span>
+              <textarea id="assessment" rows="3" class="input mt-1" placeholder="Diagnosis / differential diagnosis"></textarea>
+            </label>
+            <label>
+              <span class="field-label">Plan</span>
+              <textarea id="plan" rows="4" class="input mt-1" placeholder="Investigation / treatment / procedure / refer"></textarea>
+            </label>
+            <label>
+              <span class="field-label">Advice</span>
+              <textarea id="advice" rows="3" class="input mt-1" placeholder="คำแนะนำ / warning signs"></textarea>
+            </label>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label>
+                <span class="field-label">Follow-up date</span>
+                <input id="followUpDate" type="date" class="input mt-1" />
+              </label>
+              <label>
+                <span class="field-label">Follow-up plan</span>
+                <input id="followUpPlan" class="input mt-1" placeholder="เช่น ฟังผล pathology" />
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT -->
+      <aside class="space-y-5">
+        <div class="section-card sticky-note overflow-hidden">
+          <div class="border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-5 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 class="text-base font-black text-teal-900">Real-time OPD Note</h2>
+                <p class="mt-1 text-xs text-slate-500">ซ่อนบรรทัดว่างอัตโนมัติ</p>
+              </div>
+              <span id="noteStatus" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">Live</span>
+            </div>
+          </div>
+          <div class="p-5">
+            <textarea id="notePreview" spellcheck="false"
+              class="note-pre min-h-[520px] w-full resize-y rounded-xl border border-slate-200 bg-slate-950 p-4 text-[13px] text-slate-100 outline-none"
+              placeholder="เริ่มกรอกข้อมูลด้านซ้าย ระบบจะสร้าง OPD note อัตโนมัติ"></textarea>
+            <div class="no-print mt-3 flex items-center justify-between gap-3">
+              <p class="text-xs text-slate-500">แก้ไขข้อความในช่องนี้ได้โดยตรง • Save / Copy / Print จะใช้ข้อความที่แก้แล้ว</p>
+              <button onclick="regenerateNote()" class="shrink-0 rounded-lg border border-teal-200 px-3 py-1.5 text-xs font-black text-teal-700 hover:bg-teal-50">↻ Regenerate from Form</button>
+            </div>
+            <div class="no-print mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <button onclick="copyNote()" class="rounded-xl bg-teal-600 px-3 py-2 text-sm font-black text-white hover:bg-teal-700">Copy</button>
+              <button onclick="printNote()" class="rounded-xl bg-slate-800 px-3 py-2 text-sm font-black text-white hover:bg-slate-900">Print A4</button>
+              <button onclick="toggleRecords()" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-black hover:bg-slate-50">Records</button>
+              <button onclick="exportJSON()" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-black hover:bg-slate-50">JSON</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="recordsPanel" class="no-print section-card hidden overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div>
+              <h2 class="text-base font-black">Dashboard / Saved Records</h2>
+              <p class="mt-1 text-xs text-slate-500">LocalStorage · ปกติดูเฉพาะแพทย์ผู้ตรวจที่กรอกในฟอร์ม</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span id="dashboardScopeBadge" class="rounded-full bg-teal-50 px-3 py-1 text-xs font-black text-teal-700">Doctor scope</span>
+              <button onclick="setDoctorDashboardScope()" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold hover:bg-slate-50">เฉพาะแพทย์นี้</button>
+              <button onclick="enableAdminDashboard()" class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800">Admin: ดูทั้งหมด</button>
+              <button onclick="refreshRecords()" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold hover:bg-slate-50">Refresh</button>
+            </div>
+          </div>
+          <div class="p-5">
+            <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div class="rounded-xl border border-slate-200 p-3">
+                <div class="text-[10px] font-black uppercase tracking-wide text-slate-500">Records</div>
+                <div id="dashRecordCount" class="mt-1 text-2xl font-black">0</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 p-3">
+                <div class="text-[10px] font-black uppercase tracking-wide text-slate-500">Patients</div>
+                <div id="dashPatientCount" class="mt-1 text-2xl font-black">0</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 p-3">
+                <div class="text-[10px] font-black uppercase tracking-wide text-slate-500">Doctors</div>
+                <div id="dashDoctorCount" class="mt-1 text-2xl font-black">0</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 p-3">
+                <div class="text-[10px] font-black uppercase tracking-wide text-slate-500">Follow-up</div>
+                <div id="dashFollowupCount" class="mt-1 text-2xl font-black">0</div>
+              </div>
+            </div>
+            <input id="recordSearch" class="input" placeholder="ค้น HN / ชื่อ / แพทย์ / Diagnosis / Note" />
+            <div id="recordsList" class="mt-4 space-y-2"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div id="printArea" class="hidden"></div>
+
+<script>
+const APP_TITLE = 'GYN Dynamic Form & OPD Note Generator';
+const LOCAL_DB_KEY = 'gyn_dynamic_form_records_v1';
+const CUSTOM_DX_KEY = 'gyn_custom_diagnoses_v1';
+
+// Generic medicine/form/strength transcribed from the hospital formulary dataset used by
+// Gynecology Clinic Protocol. These are not trade names; stock/procurement must be verified.
+const HOSPITAL_FORMULARY = {
+  aub: [
+    {id:'MED-0228',name:'Ibuprofen',detail:'tablet · 400 mg',role:'NSAID'},
+    {id:'MED-0304',name:'Naproxen',detail:'tablet · 250 mg',role:'NSAID'},
+    {id:'MED-0141',name:'Diclofenac',detail:'enteric-coated tablet · 25 mg',role:'NSAID'},
+    {id:'MED-0436',name:'Tranexamic acid',detail:'capsule · 250 mg',role:'Non-hormonal'},
+    {id:'MED-0172',name:'Ethinylestradiol + Desogestrel',detail:'tablet · 0.02 mg + 0.15 mg',role:'Combined hormonal contraception'},
+    {id:'MED-0173',name:'Ethinylestradiol + Levonorgestrel',detail:'tablet · 0.03 mg + 0.15 mg',role:'Combined hormonal contraception'},
+    {id:'MED-0270',name:'Medroxyprogesterone acetate',detail:'tablet · 5 mg',role:'Progestogen'},
+    {id:'MED-0287',name:'Miconized progesterone',detail:'capsule · 200 mg',role:'Progestogen (ชื่อเรียกตามไฟล์)'}
+  ],
+  dysmenorrhea: [
+    {id:'MED-0228',name:'Ibuprofen',detail:'tablet · 400 mg',role:'NSAID'},
+    {id:'MED-0304',name:'Naproxen',detail:'tablet · 250 mg',role:'NSAID'},
+    {id:'MED-0141',name:'Diclofenac',detail:'enteric-coated tablet · 25 mg',role:'NSAID'},
+    {id:'MED-0172',name:'Ethinylestradiol + Desogestrel',detail:'tablet · 0.02 mg + 0.15 mg',role:'COC'},
+    {id:'MED-0173',name:'Ethinylestradiol + Levonorgestrel',detail:'tablet · 0.03 mg + 0.15 mg',role:'COC'},
+    {id:'MED-0270',name:'Medroxyprogesterone acetate',detail:'tablet · 5 mg',role:'Progestin'}
+  ],
+  pcos: [
+    {id:'MED-0172',name:'Ethinylestradiol + Desogestrel',detail:'tablet · 0.02 mg + 0.15 mg',role:'COC'},
+    {id:'MED-0173',name:'Ethinylestradiol + Levonorgestrel',detail:'tablet · 0.03 mg + 0.15 mg',role:'COC'},
+    {id:'MED-0270',name:'Medroxyprogesterone acetate',detail:'tablet · 5 mg',role:'Endometrial protection'},
+    {id:'MED-0287',name:'Miconized progesterone',detail:'capsule · 200 mg',role:'Endometrial protection (ชื่อเรียกตามไฟล์)'},
+    {id:'MED-0273',name:'Metformin HCl',detail:'tablet · 500 mg',role:'Metabolic risk management'}
+  ],
+  endometriosis: [
+    {id:'MED-0228',name:'Ibuprofen',detail:'tablet · 400 mg',role:'NSAID'},
+    {id:'MED-0304',name:'Naproxen',detail:'tablet · 250 mg',role:'NSAID'},
+    {id:'MED-0141',name:'Diclofenac',detail:'enteric-coated tablet · 25 mg',role:'NSAID'},
+    {id:'MED-0172',name:'Ethinylestradiol + Desogestrel',detail:'tablet · 0.02 mg + 0.15 mg',role:'COC'},
+    {id:'MED-0173',name:'Ethinylestradiol + Levonorgestrel',detail:'tablet · 0.03 mg + 0.15 mg',role:'COC'},
+    {id:'MED-0270',name:'Medroxyprogesterone acetate',detail:'tablet · 5 mg',role:'Progestin'},
+    {id:'MED-0287',name:'Miconized progesterone',detail:'capsule · 200 mg',role:'Progestin (ชื่อเรียกตามไฟล์)'}
+  ],
+  adenomyosis: [
+    {id:'MED-0228',name:'Ibuprofen',detail:'tablet · 400 mg',role:'NSAID'},
+    {id:'MED-0304',name:'Naproxen',detail:'tablet · 250 mg',role:'NSAID'},
+    {id:'MED-0141',name:'Diclofenac',detail:'enteric-coated tablet · 25 mg',role:'NSAID'},
+    {id:'MED-0436',name:'Tranexamic acid',detail:'capsule · 250 mg',role:'Non-hormonal'},
+    {id:'MED-0172',name:'Ethinylestradiol + Desogestrel',detail:'tablet · 0.02 mg + 0.15 mg',role:'Hormonal suppression'},
+    {id:'MED-0173',name:'Ethinylestradiol + Levonorgestrel',detail:'tablet · 0.03 mg + 0.15 mg',role:'Hormonal suppression'},
+    {id:'MED-0270',name:'Medroxyprogesterone acetate',detail:'tablet · 5 mg',role:'Hormonal suppression'}
+  ],
+  leiomyoma: [
+    {id:'MED-0182',name:'Ferrous fumarate',detail:'tablet · 200 mg (equivalent to 65 mg iron)',role:'Correct anemia'},
+    {id:'MED-0228',name:'Ibuprofen',detail:'tablet · 400 mg',role:'NSAID'},
+    {id:'MED-0304',name:'Naproxen',detail:'tablet · 250 mg',role:'NSAID'},
+    {id:'MED-0141',name:'Diclofenac',detail:'enteric-coated tablet · 25 mg',role:'NSAID'},
+    {id:'MED-0436',name:'Tranexamic acid',detail:'capsule · 250 mg',role:'TXA'},
+    {id:'MED-0172',name:'Ethinylestradiol + Desogestrel',detail:'tablet · 0.02 mg + 0.15 mg',role:'Hormonal bleeding control'},
+    {id:'MED-0173',name:'Ethinylestradiol + Levonorgestrel',detail:'tablet · 0.03 mg + 0.15 mg',role:'Hormonal bleeding control'},
+    {id:'MED-0270',name:'Medroxyprogesterone acetate',detail:'tablet · 5 mg',role:'Hormonal bleeding control'}
+  ],
+  vaginitis: [
+    {id:'MED-0286',name:'Metronidazole',detail:'tablet · 400 mg',role:'BV / Trichomoniasis'},
+    {id:'MED-0107',name:'Clindamycin',detail:'capsule · 300 mg',role:'BV option'},
+    {id:'MED-0111',name:'Clotrimazole',detail:'vaginal tablet · 200 mg',role:'Vulvovaginal candidiasis'},
+    {id:'MED-0186',name:'Fluconazole',detail:'capsule · 200 mg',role:'Vulvovaginal candidiasis'}
+  ],
+  'cervicitis-sti': [
+    {id:'MED-0087',name:'Ceftriaxone sodium',detail:'powder for injection · 250 mg IM',role:'Treat according to organism / local guideline'},
+    {id:'MED-0086',name:'Ceftriaxone sodium',detail:'powder for injection · 1 g IV',role:'Treat according to organism / local guideline'},
+    {id:'MED-0053',name:'Azithromycin',detail:'capsule · 250 mg',role:'Treat according to organism / local guideline'},
+    {id:'MED-0286',name:'Metronidazole',detail:'tablet · 400 mg',role:'Trichomonas when indicated'}
+  ],
+  pid: [
+    {id:'MED-0087',name:'Ceftriaxone sodium',detail:'powder for injection · 250 mg IM',role:'Gonorrhea coverage / local guideline'},
+    {id:'MED-0086',name:'Ceftriaxone sodium',detail:'powder for injection · 1 g IV',role:'Gonorrhea coverage / local guideline'},
+    {id:'MED-0158',name:'Doxycycline',detail:'capsule · 100 mg',role:'Chlamydia coverage / local guideline'},
+    {id:'MED-0286',name:'Metronidazole',detail:'tablet · 400 mg',role:'Anaerobic coverage / local guideline'},
+    {id:'MED-0285',name:'Metronidazole',detail:'injection · 0.5% in 100 ml',role:'Anaerobic coverage / local guideline'},
+    {id:'MED-0107',name:'Clindamycin',detail:'capsule · 300 mg',role:'Anaerobic coverage / local guideline'},
+    {id:'MED-0106',name:'Clindamycin',detail:'injection · 600 mg in 4 ml',role:'Anaerobic coverage / local guideline'}
+  ],
+  contraception: [
+    {id:'MED-0172',name:'Ethinylestradiol + Desogestrel',detail:'tablet · 0.02 mg + 0.15 mg',role:'COC'},
+    {id:'MED-0173',name:'Ethinylestradiol + Levonorgestrel',detail:'tablet · 0.03 mg + 0.15 mg',role:'COC'},
+    {id:'MED-0132',name:'Depot medroxypregesterone',detail:'injection · 50 mg/ml in 3 ml',role:'Injectable (ชื่อเรียกตามไฟล์)'},
+    {id:'MED-0254',name:'Levonorgestrel',detail:'tablet · 0.75 mg',role:'Emergency contraception'}
+  ],
+  infertility: [
+    {id:'MED-0191',name:'Folic acid',detail:'tablet · 5 mg',role:'Preconception care'},
+    {id:'MED-0273',name:'Metformin HCl',detail:'tablet · 500 mg',role:'Treat ovulatory dysfunction when indicated'}
+  ],
+  'menopause-gsm': [
+    {id:'MED-0118',name:'Conjugated estrogens',detail:'tablet · 0.625 mg',role:'Systemic MHT in appropriate patients'},
+    {id:'MED-0169',name:'Estradiol (17 β-estradiol)',detail:'gel · 0.06% 80 g',role:'Systemic MHT in appropriate patients'},
+    {id:'MED-0381',name:'Sertraline',detail:'tablet · 50 mg',role:'Non-hormonal therapy when appropriate'},
+    {id:'MED-0504',name:'Venlafaxine',detail:'SR capsule · 75 mg',role:'Non-hormonal therapy when appropriate'}
+  ]
+};
+
+const redFlagOptions = [
+  ['rf_unstable', 'Hemodynamic instability / syncope'],
+  ['rf_heavyBleed', 'Active heavy bleeding'],
+  ['rf_pregPain', 'UPT positive + pain/bleeding'],
+  ['rf_acutePain', 'Severe acute unilateral pelvic pain'],
+  ['rf_peritonism', 'Guarding / rebound / peritonism'],
+  ['rf_sepsis', 'High fever / sepsis + pelvic pain'],
+  ['rf_ca', 'Mass + ascites / suspected malignancy'],
+  ['rf_severeAnemia', 'Severe / symptomatic anemia']
+];
+
+const F = {
+  text: (id,label,placeholder='') => ({type:'text',id,label,placeholder}),
+  number: (id,label,placeholder='') => ({type:'number',id,label,placeholder}),
+  ta: (id,label,placeholder='') => ({type:'textarea',id,label,placeholder}),
+  cb: (id,label) => ({type:'checkbox',id,label}),
+  sel: (id,label,options) => ({type:'select',id,label,options})
+};
+
+const PROTOCOL_TREATMENTS = {
+  aub: { title:'Abnormal Uterine Bleeding', thai:'AUB / เลือดออกผิดปกติจากโพรงมดลูก', tx:[
+    ['Non-hormonal',['NSAID','Tranexamic acid เมื่อเหมาะสม']],
+    ['Hormonal',['Combined hormonal contraception','Cyclic/continuous progestogen','LNG-IUS']],
+    ['Structural pathology',['Individualized medical/surgical management']]
+  ]},
+  dysmenorrhea: { title:'Dysmenorrhea', thai:'ปวดประจำเดือน', tx:[
+    ['First line',['NSAID เริ่มก่อน/เมื่อเริ่มมีอาการ','Heat/exercise ตามความเหมาะสม']],
+    ['Hormonal suppression',['COC','Progestin','LNG-IUS','Other menstrual suppression strategies']],
+    ['Persistent symptoms',['Evaluate secondary dysmenorrhea']]
+  ]},
+  pcos: { title:'Polycystic Ovary Syndrome', thai:'PCOS / รอบเดือนผิดปกติ-ขนดก', tx:[
+    ['ไม่ต้องการตั้งครรภ์',['Lifestyle/metabolic risk management','COC หากเหมาะสม','Progestogen สำหรับ endometrial protection เมื่อจำเป็น','Metformin ในผู้ป่วยที่เหมาะสม']],
+    ['ต้องการตั้งครรภ์',['Infertility/ovulation pathway']]
+  ]},
+  endometriosis: { title:'Endometriosis', thai:'Endometriosis / ปวดเชิงกรานเรื้อรัง', tx:[
+    ['หากไม่ต้องการตั้งครรภ์',['NSAID','COC','Progestin','LNG-IUS ในผู้ป่วยที่เหมาะสม']],
+    ['Persistent/refractory/complex disease',['Specialist surgical assessment / advanced hormonal therapy']],
+    ['หาก infertility',['Fertility pathway']]
+  ]},
+  adenomyosis: { title:'Adenomyosis', thai:'Adenomyosis / ประจำเดือนมากปวดท้อง', tx:[
+    ['Treatment Set',['NSAID','Tranexamic acid','Hormonal suppression','LNG-IUS','Definitive surgery ในผู้ป่วยที่เหมาะสม']]
+  ]},
+  leiomyoma: { title:'Uterine Leiomyoma', thai:'Leiomyoma / Myoma / เนื้องอกมดลูก', tx:[
+    ['Asymptomatic',['Observation']],
+    ['Symptomatic',['Correct anemia','NSAID/TXA','Hormonal bleeding control','LNG-IUS หาก cavity เหมาะสม']],
+    ['Persistent/severe symptoms',['Procedural/surgical options based on fertility goals']]
+  ]},
+  'adnexal-cyst': { title:'Ovarian / Adnexal Cyst', thai:'Ovarian / Adnexal Cyst / ถุงน้ำรังไข่', tx:[
+    ['Simple/low-risk cyst',['Observation ± interval ultrasound ตาม clinical context']],
+    ['Symptomatic/persistent/complex',['Gynecologic assessment']],
+    ['Suspicious mass',['Gyn-oncology referral']],
+    ['Acute severe pain/torsion concern',['Emergency evaluation']]
+  ]},
+  vaginitis: { title:'Vaginitis / Vaginal Discharge', thai:'Vaginitis / ตกขาว คัน กลิ่น', tx:[
+    ['BV',['Recommended nitroimidazole/clindamycin regimen']],
+    ['Candida',['Topical azole หรือ oral therapy เมื่อเหมาะสม']],
+    ['Trichomoniasis',['Systemic nitroimidazole + partner management']],
+    ['Clinical caution',['หลีกเลี่ยง empiric antifungal ซ้ำๆ โดยไม่มีการ reassessment']]
+  ]},
+  'cervicitis-sti': { title:'Cervicitis / STI', thai:'Cervicitis / STI', tx:[
+    ['Treatment Set',['Patient treatment','Partner management','Abstinence until treatment criteria completed','Risk-reduction counseling']]
+  ]},
+  pid: { title:'Pelvic Inflammatory Disease', thai:'PID / ปีกมดลูกอักเสบ', tx:[
+    ['Broad-spectrum antibiotics',['Cover gonorrhea','Cover chlamydia','Cover anaerobes']],
+    ['Consider admission',['Pregnancy','Severe illness','TOA','Surgical emergency cannot be excluded','Unable to tolerate outpatient treatment','No clinical response']]
+  ]},
+  contraception: { title:'Contraception', thai:'Contraception / วางแผนคุมกำเนิด', tx:[
+    ['เสนอทางเลือก',['Condom','COC','POP','Injectable','Implant','Copper IUD','LNG-IUS','Emergency contraception','Permanent contraception']]
+  ]},
+  infertility: { title:'Infertility', thai:'Infertility / มีบุตรยาก', tx:[
+    ['Treatment by cause',['Optimize intercourse timing','Lifestyle/preconception care','Treat ovulatory dysfunction','Correct endocrine abnormalities','Refer for reproductive medicine when indicated']]
+  ]},
+  'menopause-gsm': { title:'Menopause / GSM', thai:'Menopause / GSM / วัยทอง', tx:[
+    ['Vasomotor symptoms',['Menopausal hormone therapy ในผู้ป่วยที่เหมาะสม','Non-hormonal therapy เมื่อ MHT ไม่เหมาะสม/ไม่ต้องการ']],
+    ['GSM',['Vaginal moisturizer/lubricant','Local vaginal hormonal therapy เมื่อเหมาะสม']],
+    ['Before systemic MHT',['Assess contraindications และ uterus status เพื่อกำหนด endometrial protection']]
+  ]},
+  'ui-oab': { title:'Urinary Incontinence / OAB', thai:'Urinary Incontinence / OAB', tx:[
+    ['Stress UI',['Pelvic floor muscle training','Weight management','Pessary/continence devices ในผู้ป่วยที่เหมาะสม','Surgical referral เมื่อ indicated']],
+    ['OAB',['Bladder training','Fluid/caffeine modification','Pelvic floor therapy','Pharmacotherapy ตามข้อบ่งชี้']]
+  ]},
+  'cervical-screening': { title:'Abnormal Cervical Screening', thai:'Abnormal Pap / HPV / Cervical Screening', tx:[
+    ['Treatment by histology/risk',['Surveillance','Colposcopy','Ablative/excisional treatment เมื่อ indicated','Gyn-oncology referral เมื่อ invasive disease suspected']]
+  ]}
+};
+
+const WORKFLOWS = {
+  aub: {
+    title: 'Abnormal Uterine Bleeding (AUB)',
+    short: 'AUB',
+    hint: 'โครงสร้างเน้น pregnancy exclusion, bleeding pattern, anemia, PALM–COEIN clues และ endometrial risk.',
+    sections: [
+      {title:'History', fields:[
+        F.cb('aub_pregPossible','มีโอกาสตั้งครรภ์'),
+        F.cb('aub_heavy','Heavy menstrual bleeding'),
+        F.cb('aub_irregular','Irregular bleeding'),
+        F.cb('aub_intermenstrual','Intermenstrual bleeding'),
+        F.cb('aub_postcoital','Postcoital bleeding'),
+        F.cb('aub_pmb','Postmenopausal bleeding'),
+        F.text('aub_duration','Duration','เช่น 3 เดือน'),
+        F.text('aub_pad','Bleeding amount','เช่น 6 pads/day, clots'),
+        F.cb('aub_anemiaSx','อาการซีด/เหนื่อย/หน้ามืด'),
+        F.cb('aub_med','ยาที่สัมพันธ์กับเลือดออก'),
+        F.cb('aub_coagHx','ประวัติ bleeding tendency'),
+        F.ta('aub_hxNote','History note')
+      ]},
+      {title:'Exam / Investigation', fields:[
+        F.text('aub_vital','Vital / hemodynamic status'),
+        F.text('aub_pallor','Pallor'),
+        F.text('aub_abd','Abdominal exam'),
+        F.text('aub_pelvic','Pelvic / speculum exam'),
+        F.text('aub_upt','UPT / β-hCG'),
+        F.text('aub_cbc','CBC / Hb / Hct'),
+        F.text('aub_tvs','TVS finding'),
+        F.text('aub_endo','Endometrial assessment / sampling'),
+        F.text('aub_otherLab','Other labs')
+      ]}
+    ]
+  },
+
+  discharge: {
+    title: 'Vaginal Discharge / Vulvovaginal Symptoms',
+    short: 'Vaginal discharge',
+    hint: 'แยก physiologic discharge, candidiasis, BV, trichomoniasis, cervicitis และ STI risk.',
+    sections: [
+      {title:'Symptoms / Risk', fields:[
+        F.cb('vd_itch','คันช่องคลอด/ปากช่องคลอด'),
+        F.cb('vd_odor','มีกลิ่นผิดปกติ'),
+        F.cb('vd_dysuria','Dysuria'),
+        F.cb('vd_dyspareunia','Dyspareunia'),
+        F.cb('vd_pelvicPain','Pelvic pain'),
+        F.cb('vd_postcoital','Postcoital bleeding'),
+        F.cb('vd_stiRisk','STI risk / new partner'),
+        F.text('vd_character','ลักษณะตกขาว','สี กลิ่น ปริมาณ'),
+        F.ta('vd_hxNote','History note')
+      ]},
+      {title:'Examination / Test', fields:[
+        F.text('vd_vulva','Vulva finding'),
+        F.text('vd_speculum','Speculum / discharge'),
+        F.text('vd_cervix','Cervix finding'),
+        F.text('vd_ph','Vaginal pH / bedside test'),
+        F.text('vd_microscopy','Microscopy / wet prep'),
+        F.text('vd_stiTest','STI testing'),
+        F.text('vd_upt','UPT if indicated')
+      ]}
+    ]
+  },
+
+  pelvicpain: {
+    title: 'Pelvic Pain / PID / Acute Pelvic Pain',
+    short: 'Pelvic pain',
+    hint: 'คัดกรอง ectopic pregnancy, torsion, acute abdomen และ PID/TOA ก่อน.',
+    sections: [
+      {title:'Pain History', fields:[
+        F.sel('pp_onset','Onset',['','Acute','Subacute','Chronic']),
+        F.text('pp_site','Site / radiation'),
+        F.text('pp_severity','Severity / pain score'),
+        F.cb('pp_fever','Fever'),
+        F.cb('pp_nausea','Nausea / vomiting'),
+        F.cb('pp_bleed','Vaginal bleeding'),
+        F.cb('pp_discharge','Abnormal discharge'),
+        F.cb('pp_missed','Missed period'),
+        F.cb('pp_stiRisk','STI risk'),
+        F.ta('pp_hxNote','History note')
+      ]},
+      {title:'Exam / Investigation', fields:[
+        F.text('pp_vital','Vital signs'),
+        F.text('pp_abd','Abdominal exam'),
+        F.text('pp_cmt','Cervical motion tenderness'),
+        F.text('pp_adnexa','Adnexal tenderness / mass'),
+        F.text('pp_upt','UPT / β-hCG'),
+        F.text('pp_cbc','CBC / inflammatory markers'),
+        F.text('pp_tvs','TVS'),
+        F.text('pp_sti','STI test')
+      ]}
+    ]
+  },
+
+  cervix: {
+    title: 'Abnormal Pap / HPV / Colposcopy',
+    short: 'Pap / HPV',
+    hint: 'ใช้สำหรับรวบรวมผล screening, risk factors, colposcopic impression, biopsy/ECC และ pathology tracking.',
+    sections: [
+      {title:'Screening / Background', fields:[
+        F.text('cx_pap','Pap result'),
+        F.text('cx_hpv','HPV result / genotype'),
+        F.text('cx_prev','Previous abnormal Pap/HPV'),
+        F.cb('cx_preg','Pregnancy'),
+        F.cb('cx_immuno','Immunosuppression'),
+        F.cb('cx_smoke','Smoking'),
+        F.cb('cx_postcoital','Postcoital bleeding'),
+        F.text('cx_lastScreen','Previous screening date')
+      ]},
+      {title:'Colposcopy / Procedure', fields:[
+        F.cb('cx_id2','2 identifiers confirmed'),
+        F.cb('cx_consent','Consent signed'),
+        F.cb('cx_pregChecked','Pregnancy status checked'),
+        F.cb('cx_cervixVisible','Cervix fully visualized'),
+        F.cb('cx_tzSeen','Transformation zone seen'),
+        F.cb('cx_aceto','Acetowhite lesion'),
+        F.cb('cx_mosaic','Mosaic / punctation'),
+        F.cb('cx_atypVessel','Atypical vessels'),
+        F.cb('cx_grossLesion','Gross lesion'),
+        F.cb('cx_contactBleed','Contact bleeding'),
+        F.cb('cx_biopsy','Cervical biopsy'),
+        F.text('cx_biopsySite','Biopsy site'),
+        F.cb('cx_ecc','ECC'),
+        F.text('cx_impression','Colposcopic impression'),
+        F.cb('cx_pathLog','Pathology tracking documented')
+      ]}
+    ]
+  },
+
+  mass: {
+    title: 'Pelvic Mass / Ovarian Cyst / Myoma',
+    short: 'Pelvic mass',
+    hint: 'เน้นอาการ, menopausal status, ultrasound morphology และ malignancy warning features.',
+    sections: [
+      {title:'History / Symptoms', fields:[
+        F.cb('mass_pain','Pelvic pain'),
+        F.cb('mass_acute','Acute pain'),
+        F.cb('mass_bloat','Bloating / abdominal distension'),
+        F.cb('mass_earlySatiety','Early satiety'),
+        F.cb('mass_weightLoss','Weight loss'),
+        F.cb('mass_urinary','Urinary / bowel pressure symptoms'),
+        F.cb('mass_aub','AUB'),
+        F.cb('mass_infertility','Infertility'),
+        F.cb('mass_endoHx','Endometriosis history'),
+        F.cb('mass_family','Family history breast/ovarian cancer'),
+        F.sel('mass_meno','Menopausal status',['','Premenopause','Perimenopause','Postmenopause'])
+      ]},
+      {title:'Exam / Ultrasound', fields:[
+        F.text('mass_abd','Abdominal exam'),
+        F.text('mass_pelvic','Pelvic exam'),
+        F.text('mass_size','Mass size'),
+        F.text('mass_side','Side / origin'),
+        F.text('mass_morph','Morphology'),
+        F.text('mass_solid','Solid component / papillary projection'),
+        F.text('mass_septa','Septation'),
+        F.text('mass_doppler','Doppler / vascularity'),
+        F.text('mass_ascites','Ascites'),
+        F.text('mass_marker','Tumor marker if indicated'),
+        F.text('mass_tvs','Overall ultrasound impression')
+      ]}
+    ]
+  },
+
+  menopause: {
+    title: 'Menopause / Perimenopause',
+    short: 'Menopause',
+    hint: 'ประเมินอาการ, bleeding warning sign, contraindication/risk assessment และ shared decision-making.',
+    sections: [
+      {title:'Symptoms / History', fields:[
+        F.text('meno_lmp','Last menstrual period / years since menopause'),
+        F.cb('meno_vms','Hot flush / night sweat'),
+        F.cb('meno_sleep','Sleep disturbance'),
+        F.cb('meno_mood','Mood symptoms'),
+        F.cb('meno_gsm','Genitourinary syndrome / vaginal dryness'),
+        F.cb('meno_sex','Sexual symptoms'),
+        F.cb('meno_pmb','Postmenopausal bleeding'),
+        F.cb('meno_osteoporosis','Osteoporosis / fracture risk'),
+        F.cb('meno_cv','Cardiovascular risk'),
+        F.cb('meno_vte','VTE history/risk'),
+        F.cb('meno_breast','Breast cancer history/risk'),
+        F.ta('meno_goal','Patient goals / concern')
+      ]},
+      {title:'Assessment', fields:[
+        F.text('meno_bp','BP / BMI'),
+        F.text('meno_breastExam','Breast assessment if indicated'),
+        F.text('meno_pelvicExam','Pelvic exam if indicated'),
+        F.text('meno_screen','Cancer screening status'),
+        F.text('meno_bone','Bone health assessment'),
+        F.text('meno_lab','Labs if clinically indicated')
+      ]}
+    ]
+  },
+
+  family: {
+    title: 'Family Planning / Contraception',
+    short: 'Family planning',
+    hint: 'บันทึก reproductive goal, contraindication screen, method counseling และ follow-up.',
+    sections: [
+      {title:'Reproductive Goal', fields:[
+        F.sel('fp_goal','Goal',['','Prevent pregnancy','Spacing','Permanent contraception','Preconception planning']),
+        F.text('fp_current','Current method'),
+        F.text('fp_lastSex','Last intercourse / pregnancy risk'),
+        F.text('fp_lmp','LMP'),
+        F.cb('fp_upt','UPT checked if indicated'),
+        F.cb('fp_sti','STI risk'),
+        F.cb('fp_smoke','Smoking'),
+        F.cb('fp_migraine','Migraine with aura'),
+        F.cb('fp_vte','VTE / thrombophilia'),
+        F.cb('fp_ht','Hypertension'),
+        F.cb('fp_liver','Severe liver disease'),
+        F.cb('fp_breast','Breast cancer history')
+      ]},
+      {title:'Counseling / Method', fields:[
+        F.text('fp_options','Options discussed'),
+        F.text('fp_choice','Chosen method'),
+        F.text('fp_consent','Consent / counseling'),
+        F.text('fp_procedure','Procedure / device details'),
+        F.text('fp_backup','Backup contraception / transition'),
+        F.text('fp_warning','Warning signs / return advice')
+      ]}
+    ]
+  },
+
+  infertility: {
+    title: 'Infertility Initial Assessment',
+    short: 'Infertility',
+    hint: 'ใช้เป็น initial workup ก่อนพิจารณาส่งต่อ reproductive medicine.',
+    sections: [
+      {title:'Couple History', fields:[
+        F.text('inf_duration','Duration trying to conceive'),
+        F.sel('inf_type','Type',['','Primary','Secondary']),
+        F.text('inf_cycle','Cycle pattern'),
+        F.text('inf_intercourse','Intercourse frequency / timing'),
+        F.text('inf_prevPreg','Previous pregnancy outcome'),
+        F.text('inf_surgery','Pelvic surgery / infection history'),
+        F.text('inf_endo','Endometriosis symptoms/history'),
+        F.text('inf_partner','Partner history / risk'),
+        F.ta('inf_other','Other history')
+      ]},
+      {title:'Initial Evaluation', fields:[
+        F.text('inf_bmi','BMI'),
+        F.text('inf_tvs','TVS / AFC / pelvic finding'),
+        F.text('inf_ovulation','Ovulation assessment'),
+        F.text('inf_tubal','Tubal assessment'),
+        F.text('inf_semen','Semen analysis'),
+        F.text('inf_lab','Relevant endocrine labs'),
+        F.text('inf_precon','Preconception optimization')
+      ]}
+    ]
+  },
+
+  followup: {
+    title: 'Result / Pathology Follow-up',
+    short: 'Follow-up',
+    hint: 'เหมาะสำหรับ visit ฟังผล, pathology tracking, abnormal result closure และนัดครั้งต่อไป.',
+    sections: [
+      {title:'Result Review', fields:[
+        F.text('fu_prevDx','Previous diagnosis / procedure'),
+        F.text('fu_result','Result reviewed'),
+        F.text('fu_path','Pathology / cytology / HPV result'),
+        F.text('fu_lab','Lab / imaging result'),
+        F.cb('fu_concordant','Result concordant with clinical finding'),
+        F.cb('fu_abnormal','Abnormal result requiring action'),
+        F.cb('fu_contact','Patient informed / result communicated'),
+        F.cb('fu_tracking','Tracking / registry updated')
+      ]},
+      {title:'Next Step', fields:[
+        F.text('fu_action','Action taken'),
+        F.text('fu_next','Next investigation / procedure'),
+        F.text('fu_refer','Referral if indicated'),
+        F.text('fu_interval','Follow-up interval')
+      ]}
+    ]
+  }
+};
+
+let currentWorkflow = 'aub';
+let extraCounter = 0;
+let cachedRecords = [];
+let dashboardAdminMode = false;
+const DASHBOARD_ADMIN_CODE = '1234';
+let noteManualOverride = false;
+let lastGeneratedNote = '';
+
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s='') {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function prettyDate(v) {
+  if (!v) return '';
+  const [y,m,d] = v.split('-');
+  return y && m && d ? `${d}/${m}/${y}` : v;
+}
+function fillToday() {
+  $('visitDate').value = new Date().toISOString().slice(0,10);
+  updateNote();
+}
+function init() {
+  fillToday();
+  renderRedFlags();
+  renderWorkflowSelect();
+  renderWorkflow();
+  renderDiagnosisOptions();
+  renderTreatmentSet();
+  bindLiveUpdate();
+  document.addEventListener('input', e => {
+    if (e.target?.classList?.contains('required-error')) e.target.classList.remove('required-error');
+    if (e.target?.id === 'diagnosis' || e.target?.id === 'diagnosisProtocol') {
+      if (getValue('diagnosis') || getValue('diagnosisProtocol')) clearRequiredErrors();
+    }
+  });
+  document.addEventListener('change', e => {
+    if (e.target?.classList?.contains('required-error')) e.target.classList.remove('required-error');
+    if (e.target?.id === 'diagnosis' || e.target?.id === 'diagnosisProtocol') {
+      if (getValue('diagnosis') || getValue('diagnosisProtocol')) clearRequiredErrors();
+    }
+  });
+  if ($('doctor') && !$('doctor').dataset.dashboardBound) {
+    $('doctor').addEventListener('change', () => {
+      if (!dashboardAdminMode && !$('recordsPanel')?.classList.contains('hidden')) refreshRecords();
+    });
+    $('doctor').dataset.dashboardBound = '1';
+  }
+  detectMode();
+  syncThemeButton();
+  bindEditableNote();
+  updateNote();
+}
+function detectMode() {
+  if ($('modeBadge')) {
+    $('modeBadge').textContent = 'GitHub Pages / LocalStorage';
+    $('modeBadge').className = 'rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700';
+  }
+}
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('gyn_theme', isDark ? 'dark' : 'light');
+  syncThemeButton();
+}
+function syncThemeButton() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const btn = $('themeToggle');
+  if (!btn) return;
+  btn.textContent = isDark ? '☀️ Light' : '🌙 Dark';
+  btn.title = isDark ? 'เปลี่ยนเป็น Light mode' : 'เปลี่ยนเป็น Dark mode';
+}
+function bindEditableNote() {
+  const note = $('notePreview');
+  if (!note || note.dataset.editBound) return;
+  note.addEventListener('input', () => {
+    noteManualOverride = true;
+    $('noteStatus').textContent = 'Edited';
+    $('noteStatus').className = 'rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700';
+  });
+  note.dataset.editBound = '1';
+}
+function regenerateNote() {
+  noteManualOverride = false;
+  updateNote();
+  $('noteStatus').textContent = 'Live';
+  $('noteStatus').className = 'rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700';
+}
+function getCustomDiagnoses() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_DX_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveCustomDiagnoses(list) {
+  localStorage.setItem(CUSTOM_DX_KEY, JSON.stringify(list));
+}
+async function addCustomDiagnosis() {
+  const result = await Swal.fire({
+    title:'เพิ่ม Diagnosis',
+    html:`<input id="swalDxName" class="swal2-input" placeholder="Diagnosis / Impression">
+          <input id="swalDxIcd" class="swal2-input" placeholder="ICD-10 (optional)">`,
+    showCancelButton:true,
+    confirmButtonText:'เพิ่มและเลือก',
+    cancelButtonText:'ยกเลิก',
+    focusConfirm:false,
+    preConfirm:() => {
+      const name = document.getElementById('swalDxName').value.trim();
+      const icd10 = document.getElementById('swalDxIcd').value.trim();
+      if (!name) { Swal.showValidationMessage('กรุณาใส่ Diagnosis'); return false; }
+      return {name,icd10};
+    }
+  });
+  if (!result.isConfirmed) return;
+  const list = getCustomDiagnoses();
+  const id = 'custom-' + Date.now();
+  list.push({id, name:result.value.name, icd10:result.value.icd10 || ''});
+  saveCustomDiagnoses(list);
+  renderDiagnosisOptions(id);
+  $('diagnosis').value = result.value.name;
+  $('diagnosis').dataset.autoValue = result.value.name;
+  if (result.value.icd10) $('diagnosisIcd10').value = result.value.icd10;
+  renderTreatmentSet();
+  updateNote();
+}
+function renderDiagnosisOptions(selectedValue='') {
+  const sel = $('diagnosisProtocol');
+  if (!sel) return;
+  const selected = selectedValue || sel.value || '';
+  const protocolOptions = Object.entries(PROTOCOL_TREATMENTS).map(([id,p]) =>
+    `<option value="${id}">${escapeHtml(p.thai)} · ${escapeHtml(p.title)}</option>`
+  ).join('');
+  const custom = getCustomDiagnoses();
+  const customOptions = custom.length ? `<optgroup label="Diagnosis ที่เพิ่มเอง">${custom.map(d =>
+    `<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)}${d.icd10 ? ' · '+escapeHtml(d.icd10) : ''}</option>`
+  ).join('')}</optgroup>` : '';
+  sel.innerHTML = '<option value="">— เลือก Diagnosis —</option>' +
+    `<optgroup label="Gynecology Clinic Protocol">${protocolOptions}</optgroup>` + customOptions;
+  if ([...sel.options].some(o => o.value === selected)) sel.value = selected;
+  if (!sel.dataset.dxBound) {
+    sel.addEventListener('change', () => {
+      const p = PROTOCOL_TREATMENTS[sel.value];
+      const customDx = getCustomDiagnoses().find(d => d.id === sel.value);
+      const dx = $('diagnosis');
+      const autoName = p ? p.thai : (customDx ? customDx.name : '');
+      if (autoName && dx) {
+        const previousAuto = dx.dataset.autoValue || '';
+        if (!dx.value.trim() || dx.value.trim() === previousAuto) {
+          dx.value = autoName;
+          dx.dataset.autoValue = autoName;
+        }
+      }
+      if (customDx?.icd10 && !$('diagnosisIcd10').value.trim()) $('diagnosisIcd10').value = customDx.icd10;
+      renderTreatmentSet();
+      updateNote();
+    });
+    sel.dataset.dxBound = '1';
+  }
+}
+function renderTreatmentSet(selectedValues=[], selectedFormulary=[]) {
+  const host = $('treatmentSet');
+  if (!host) return;
+  const id = getValue('diagnosisProtocol');
+  const p = PROTOCOL_TREATMENTS[id];
+  const chosen = new Set(selectedValues || []);
+  const selectedMap = new Map((selectedFormulary || []).map(x => [x.id || x.name, x]));
+
+  let html = '';
+  if (p) {
+    html += `<div><div class="mb-3 flex items-center justify-between"><h3 class="text-sm font-black text-teal-800">Clinical Treatment Framework</h3><span class="text-[11px] text-slate-500">Gynecology Clinic Protocol</span></div>`;
+    html += p.tx.map(([group,items]) => `
+      <div class="mb-4">
+        <h4 class="mb-2 text-sm font-black text-slate-700">${escapeHtml(group)}</h4>
+        <div class="grid gap-2 sm:grid-cols-2">
+          ${items.map(item => `<label class="pill-check block">
+            <input type="checkbox" class="treatment-option" data-value="${escapeHtml(item)}" ${chosen.has(item) ? 'checked' : ''} />
+            <span class="w-full rounded-xl">${escapeHtml(item)}</span>
+          </label>`).join('')}
+        </div>
+      </div>`).join('');
+    html += '</div>';
+  } else {
+    html += '<div class="rounded-xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">Diagnosis นี้ไม่มี Treatment framework ใน Protocol — สามารถเพิ่มการรักษาเองด้านล่างได้</div>';
+  }
+
+  const meds = HOSPITAL_FORMULARY[id] || [];
+  html += `<div class="border-t border-slate-200 pt-5">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h3 class="text-sm font-black text-teal-800">กรอบยา รพ.บางจาก</h3>
+        <p class="mt-1 text-xs text-slate-500">ชื่อสามัญ / รูปแบบ / ความแรงจากชุดข้อมูลกรอบยาที่ใช้ใน Protocol · กรุณายืนยันสต็อกและข้อห้ามใช้ก่อนสั่ง</p>
+      </div>
+      <span class="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-700">${meds.length} รายการ</span>
+    </div>`;
+  if (meds.length) {
+    html += `<div class="grid gap-3">${meds.map(m => {
+      const saved = selectedMap.get(m.id) || {};
+      const checked = selectedMap.has(m.id) ? 'checked' : '';
+      return `<div class="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+        <label class="flex cursor-pointer items-start gap-3">
+          <input type="checkbox" class="formulary-option mt-1 h-4 w-4 accent-teal-600" data-id="${escapeHtml(m.id)}" data-name="${escapeHtml(m.name)}" data-detail="${escapeHtml(m.detail)}" data-role="${escapeHtml(m.role)}" ${checked} />
+          <span class="min-w-0 flex-1">
+            <b class="block text-sm text-slate-900">${escapeHtml(m.name)}</b>
+            <small class="block text-xs text-slate-500">${escapeHtml(m.detail)}</small>
+            <small class="block text-[11px] font-semibold text-teal-700">${escapeHtml(m.role)}</small>
+          </span>
+        </label>
+        <input class="input formulary-instruction mt-2 text-sm" data-for="${escapeHtml(m.id)}" placeholder="วิธีใช้ / dose / route / frequency / duration" value="${escapeHtml(saved.instruction || '')}" />
+      </div>`;
+    }).join('')}</div>`;
+  } else {
+    html += '<div class="rounded-xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-500">ไม่พบรายการกรอบยาเฉพาะ Diagnosis นี้ในชุดข้อมูลที่นำมาใช้ — เพิ่มยาเองด้านล่างได้</div>';
+  }
+  html += '</div>';
+  host.innerHTML = html;
+  host.querySelectorAll('.treatment-option,.formulary-option,.formulary-instruction').forEach(el => {
+    el.addEventListener('input', () => { updateTreatmentCount(); updateNote(); });
+    el.addEventListener('change', () => { updateTreatmentCount(); updateNote(); });
+  });
+  updateTreatmentCount();
+}
+function collectTreatmentSelections() {
+  return [...document.querySelectorAll('.treatment-option:checked')]
+    .map(el => el.dataset.value || '')
+    .filter(Boolean);
+}
+function collectFormularySelections() {
+  return [...document.querySelectorAll('.formulary-option:checked')].map(el => {
+    const id = el.dataset.id || '';
+    const instruction = document.querySelector(`.formulary-instruction[data-for="${CSS.escape(id)}"]`)?.value.trim() || '';
+    return {id, name:el.dataset.name || '', detail:el.dataset.detail || '', role:el.dataset.role || '', instruction};
+  });
+}
+let customTreatmentCounter = 0;
+function addCustomTreatmentRow(item={}) {
+  customTreatmentCounter++;
+  const id = `customTx_${customTreatmentCounter}`;
+  const row = document.createElement('div');
+  row.id = id;
+  row.className = 'rounded-xl border border-slate-200 p-3';
+  row.innerHTML = `<div class="grid gap-2 sm:grid-cols-2">
+    <input class="input custom-tx-name" placeholder="ชื่อยา / Treatment" value="${escapeHtml(item.name || '')}" />
+    <input class="input custom-tx-detail" placeholder="รูปแบบ / ความแรง / procedure" value="${escapeHtml(item.detail || '')}" />
+    <input class="input custom-tx-instruction sm:col-span-2" placeholder="Dose / route / frequency / duration / instruction" value="${escapeHtml(item.instruction || '')}" />
+  </div>
+  <div class="no-print mt-2 text-right"><button type="button" onclick="removeCustomTreatmentRow('${id}')" class="text-xs font-bold text-red-600 hover:underline">ลบรายการ</button></div>`;
+  $('customTreatmentRows').appendChild(row);
+  row.querySelectorAll('input').forEach(el => el.addEventListener('input', () => { updateTreatmentCount(); updateNote(); }));
+  updateTreatmentCount();
+  updateNote();
+}
+function removeCustomTreatmentRow(id) {
+  $(id)?.remove();
+  updateTreatmentCount();
+  updateNote();
+}
+function collectCustomTreatments() {
+  return [...document.querySelectorAll('#customTreatmentRows > div')].map(row => ({
+    name: row.querySelector('.custom-tx-name')?.value.trim() || '',
+    detail: row.querySelector('.custom-tx-detail')?.value.trim() || '',
+    instruction: row.querySelector('.custom-tx-instruction')?.value.trim() || ''
+  })).filter(x => x.name || x.detail || x.instruction);
+}
+function updateTreatmentCount() {
+  const n = collectTreatmentSelections().length + collectFormularySelections().length + collectCustomTreatments().length;
+  if ($('treatmentCount')) $('treatmentCount').textContent = `${n} รายการ`;
+}
+function renderRedFlags() {
+  $('redFlags').innerHTML = redFlagOptions.map(([id,label]) => `
+    <label class="pill-check danger-pill">
+      <input type="checkbox" id="${id}" data-live />
+      <span>${escapeHtml(label)}</span>
+    </label>`).join('');
+}
+function renderWorkflowSelect() {
+  $('workflow').innerHTML = Object.entries(WORKFLOWS).map(([key,w]) =>
+    `<option value="${key}">${escapeHtml(w.title)}</option>`).join('');
+  $('workflow').value = currentWorkflow;
+  $('workflow').addEventListener('change', e => {
+    currentWorkflow = e.target.value;
+    renderWorkflow();
+    updateNote();
+  });
+}
+function renderWorkflow() {
+  const wf = WORKFLOWS[currentWorkflow];
+  $('workflowHint').textContent = wf.hint;
+  $('dynamicSections').innerHTML = wf.sections.map((section,idx) => `
+    <div class="section-card overflow-hidden">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="text-base font-black">${idx+4}. ${escapeHtml(section.title)}</h2>
+      </div>
+      <div class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+        ${section.fields.map(renderField).join('')}
+      </div>
+    </div>`).join('');
+  bindLiveUpdate();
+}
+function renderField(f) {
+  if (f.type === 'checkbox') {
+    return `<label class="pill-check"><input type="checkbox" id="${f.id}" data-live /><span>${escapeHtml(f.label)}</span></label>`;
+  }
+  if (f.type === 'textarea') {
+    return `<label class="sm:col-span-2"><span class="field-label">${escapeHtml(f.label)}</span>
+      <textarea id="${f.id}" rows="2" data-live class="input mt-1" placeholder="${escapeHtml(f.placeholder||'')}"></textarea></label>`;
+  }
+  if (f.type === 'select') {
+    return `<label><span class="field-label">${escapeHtml(f.label)}</span>
+      <select id="${f.id}" data-live class="input mt-1">${f.options.map(o=>`<option>${escapeHtml(o)}</option>`).join('')}</select></label>`;
+  }
+  return `<label><span class="field-label">${escapeHtml(f.label)}</span>
+    <input id="${f.id}" type="${f.type}" data-live class="input mt-1" placeholder="${escapeHtml(f.placeholder||'')}" /></label>`;
+}
+function bindLiveUpdate() {
+  document.querySelectorAll('input,textarea,select').forEach(el => {
+    if (el.dataset.bound) return;
+    el.addEventListener('input', updateNote);
+    el.addEventListener('change', updateNote);
+    el.dataset.bound = '1';
+  });
+  if ($('recordSearch') && !$('recordSearch').dataset.searchBound) {
+    $('recordSearch').addEventListener('input', renderRecords);
+    $('recordSearch').dataset.searchBound = '1';
+  }
+}
+function getValue(id) {
+  const el = $(id);
+  if (!el) return '';
+  return el.type === 'checkbox' ? el.checked : el.value.trim();
+}
+function addExtraSlot(key='', value='') {
+  extraCounter++;
+  const id = `extra_${extraCounter}`;
+  const wrap = document.createElement('div');
+  wrap.id = id;
+  wrap.className = 'grid gap-2 sm:grid-cols-[.8fr_1.2fr_auto]';
+  wrap.innerHTML = `
+    <input class="input extra-key" placeholder="หัวข้อ เช่น PE" value="${escapeHtml(key)}" />
+    <input class="input extra-value" placeholder="รายละเอียด" value="${escapeHtml(value)}" />
+    <button type="button" class="no-print rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50" onclick="removeExtraSlot('${id}')">ลบ</button>`;
+  $('extraSlots').appendChild(wrap);
+  wrap.querySelectorAll('input').forEach(el => el.addEventListener('input', updateNote));
+  updateNote();
+}
+function removeExtraSlot(id) {
+  const el = $(id);
+  if (el) el.remove();
+  updateNote();
+}
+function collectExtras() {
+  return [...document.querySelectorAll('#extraSlots > div')].map(row => ({
+    key: row.querySelector('.extra-key')?.value.trim() || '',
+    value: row.querySelector('.extra-value')?.value.trim() || ''
+  })).filter(x => x.key || x.value);
+}
+function collectDynamicData() {
+  const data = {};
+  const wf = WORKFLOWS[currentWorkflow];
+  wf.sections.flatMap(s=>s.fields).forEach(f => data[f.id] = getValue(f.id));
+  return data;
+}
+function collectData() {
+  const data = {
+    recordId: $('recordId').value || '',
+    workflow: currentWorkflow,
+    visitDate: getValue('visitDate'),
+    hn: getValue('hn'),
+    patientName: getValue('patientName'),
+    age: getValue('age'),
+    gp: getValue('gp'),
+    lmp: getValue('lmp'),
+    chiefComplaint: getValue('chiefComplaint'),
+    doctor: getValue('doctor'),
+    triageNote: getValue('triageNote'),
+    diagnosisProtocol: getValue('diagnosisProtocol'),
+    diagnosis: getValue('diagnosis'),
+    diagnosisIcd10: getValue('diagnosisIcd10'),
+    diagnosisStatus: getValue('diagnosisStatus'),
+    differentialDiagnosis: getValue('differentialDiagnosis'),
+    treatments: collectTreatmentSelections(),
+    formularyMedicines: collectFormularySelections(),
+    customTreatments: collectCustomTreatments(),
+    treatmentDetails: getValue('treatmentDetails'),
+    assessment: getValue('assessment'),
+    plan: getValue('plan'),
+    advice: getValue('advice'),
+    followUpDate: getValue('followUpDate'),
+    followUpPlan: getValue('followUpPlan'),
+    redFlags: Object.fromEntries(redFlagOptions.map(([id]) => [id, !!getValue(id)])),
+    dynamic: collectDynamicData(),
+    extras: collectExtras(),
+    updatedAt: new Date().toISOString()
+  };
+  data.generatedNote = buildNote(data);
+  data.note = (noteManualOverride && $('notePreview'))
+    ? $('notePreview').value.trim()
+    : data.generatedNote;
+  return data;
+}
+function nonEmpty(label, value) {
+  return value ? `${label}: ${value}` : '';
+}
+function buildSectionLines(section, dyn) {
+  const lines = [];
+  const checked = [];
+  section.fields.forEach(f => {
+    const v = dyn[f.id];
+    if (f.type === 'checkbox') {
+      if (v) checked.push(f.label);
+    } else if (v) {
+      lines.push(`${f.label}: ${v}`);
+    }
+  });
+  if (checked.length) lines.unshift(`Positive/Selected: ${checked.join(', ')}`);
+  return lines;
+}
+function buildNote(data=collectData()) {
+  const wf = WORKFLOWS[data.workflow];
+  const lines = [];
+  const head = [
+    nonEmpty('Date', prettyDate(data.visitDate)),
+    nonEmpty('HN', data.hn),
+    nonEmpty('Name', data.patientName),
+    nonEmpty('Age', data.age ? `${data.age} yr` : ''),
+    nonEmpty('OB Hx', data.gp),
+    nonEmpty('LMP', prettyDate(data.lmp))
+  ].filter(Boolean);
+  if (head.length) lines.push(head.join(' | '));
+
+  if (data.chiefComplaint) lines.push(`CC: ${data.chiefComplaint}`);
+  lines.push(`Workflow: ${wf.title}`);
+
+  const red = redFlagOptions.filter(([id]) => data.redFlags[id]).map(([,label]) => label);
+  if (red.length) lines.push(`RED FLAGS: ${red.join('; ')}`);
+  if (data.triageNote) lines.push(`Triage: ${data.triageNote}`);
+
+  wf.sections.forEach(section => {
+    const secLines = buildSectionLines(section, data.dynamic);
+    if (secLines.length) {
+      lines.push('');
+      lines.push(`[${section.title}]`);
+      lines.push(...secLines.map(x => `- ${x}`));
+    }
+  });
+
+  if (data.extras.length) {
+    lines.push('');
+    lines.push('[Additional]');
+    data.extras.forEach(x => {
+      const txt = x.key && x.value ? `${x.key}: ${x.value}` : (x.key || x.value);
+      if (txt) lines.push(`- ${txt}`);
+    });
+  }
+
+  if (data.diagnosis || data.diagnosisProtocol || data.diagnosisIcd10 || data.diagnosisStatus || data.differentialDiagnosis) {
+    lines.push('');
+    lines.push('[Diagnosis]');
+    const diagnosisText = data.diagnosis || PROTOCOL_TREATMENTS[data.diagnosisProtocol]?.thai || '';
+    if (diagnosisText) lines.push(`Diagnosis: ${diagnosisText}`);
+    if (data.diagnosisIcd10) lines.push(`ICD-10: ${data.diagnosisIcd10}`);
+    if (data.diagnosisStatus) lines.push(`Status: ${data.diagnosisStatus}`);
+    if (data.differentialDiagnosis) lines.push(`Differential/Secondary: ${data.differentialDiagnosis}`);
+  }
+
+  if ((data.treatments && data.treatments.length) || (data.formularyMedicines && data.formularyMedicines.length) || (data.customTreatments && data.customTreatments.length) || data.treatmentDetails) {
+    lines.push('');
+    lines.push('[Treatment]');
+    if (data.treatments && data.treatments.length) {
+      data.treatments.forEach(item => lines.push(`- ${item}`));
+    }
+    if (data.formularyMedicines && data.formularyMedicines.length) {
+      lines.push('Hospital formulary:');
+      data.formularyMedicines.forEach(m => lines.push(`- ${m.name}${m.detail ? ' ('+m.detail+')' : ''}${m.instruction ? ' — '+m.instruction : ''}`));
+    }
+    if (data.customTreatments && data.customTreatments.length) {
+      lines.push('Additional treatment:');
+      data.customTreatments.forEach(t => lines.push(`- ${[t.name,t.detail].filter(Boolean).join(' · ')}${t.instruction ? ' — '+t.instruction : ''}`));
+    }
+    if (data.treatmentDetails) lines.push(`Treatment details: ${data.treatmentDetails}`);
+  }
+
+  if (data.assessment) { lines.push(''); lines.push(`Assessment: ${data.assessment}`); }
+  if (data.plan) lines.push(`Plan: ${data.plan}`);
+  if (data.advice) lines.push(`Advice: ${data.advice}`);
+  if (data.followUpDate || data.followUpPlan) {
+    lines.push(`Follow-up: ${[prettyDate(data.followUpDate), data.followUpPlan].filter(Boolean).join(' — ')}`);
+  }
+  if (data.doctor) lines.push(`Doctor: ${data.doctor}`);
+
+  return lines.filter((line, i, arr) => !(line === '' && arr[i-1] === '')).join('\n').trim();
+}
+function updateNote() {
+  const data = collectData();
+  lastGeneratedNote = data.generatedNote || '';
+  if (!noteManualOverride) {
+    $('notePreview').value = lastGeneratedNote;
+    $('noteStatus').textContent = 'Live';
+    $('noteStatus').className = 'rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700';
+  } else {
+    $('noteStatus').textContent = 'Edited';
+    $('noteStatus').className = 'rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700';
+  }
+}
+async function copyNote() {
+  const note = collectData().note;
+  if (!note) return;
+  try {
+    await navigator.clipboard.writeText(note);
+    Swal.fire({toast:true,position:'top-end',icon:'success',title:'คัดลอก OPD note แล้ว',showConfirmButton:false,timer:1300});
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = note; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+}
+function buildPrintArea() {
+  const d = collectData();
+  const red = redFlagOptions.filter(([id]) => d.redFlags[id]).map(([,label]) => label);
+  $('printArea').innerHTML = `
+    <div class="mx-auto max-w-[190mm] bg-white text-slate-900">
+      <div class="border-b-2 border-teal-700 pb-3">
+        <h1 class="text-xl font-black">Gynecology Clinic — OPD Note</h1>
+        <div class="mt-1 text-xs text-slate-500">${escapeHtml(WORKFLOWS[d.workflow].title)}</div>
+      </div>
+      <div class="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+        <div><b>Date:</b> ${escapeHtml(prettyDate(d.visitDate))}</div>
+        <div><b>HN:</b> ${escapeHtml(d.hn)}</div>
+        <div><b>Name:</b> ${escapeHtml(d.patientName)}</div>
+        <div><b>Age:</b> ${escapeHtml(d.age)}</div>
+        <div><b>G/P:</b> ${escapeHtml(d.gp)}</div>
+        <div><b>LMP:</b> ${escapeHtml(prettyDate(d.lmp))}</div>
+      </div>
+      ${red.length ? `<div class="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm"><b>Red flags:</b> ${red.map(escapeHtml).join('; ')}</div>` : ''}
+      <pre class="note-pre mt-5 whitespace-pre-wrap text-[12.5px]">${escapeHtml(d.note)}</pre>
+      <div class="mt-8 border-t pt-2 text-[10px] text-slate-500">Clinical documentation aid — verify all information before use.</div>
+    </div>`;
+}
+function printNote() {
+  buildPrintArea();
+  $('printArea').classList.remove('hidden');
+  setTimeout(() => window.print(), 100);
+}
+function toggleRecords() {
+  const panel = $('recordsPanel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) {
+    if (!dashboardAdminMode && !getValue('doctor')) {
+      cachedRecords = [];
+      updateDashboardScopeBadge();
+      renderRecords();
+      Swal.fire({
+        icon:'info',
+        title:'กรอกแพทย์ผู้ตรวจก่อน',
+        text:'Dashboard ปกติจะแสดงเฉพาะ record ของแพทย์ที่กรอกในฟอร์ม หรือกด Admin: ดูทั้งหมด'
+      });
+      return;
+    }
+    refreshRecords();
+  }
+}
+function saveLocal(data) {
+  const all = JSON.parse(localStorage.getItem(LOCAL_DB_KEY) || '[]');
+  if (!data.recordId) data.recordId = 'GYN-' + Date.now();
+  const idx = all.findIndex(r => r.recordId === data.recordId);
+  if (idx >= 0) all[idx] = data; else all.unshift(data);
+  localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(all));
+  $('recordId').value = data.recordId;
+  return {success:true, recordId:data.recordId};
+}
+
+function clearRequiredErrors() {
+  ['hn','patientName','age','doctor','diagnosis','diagnosisProtocol'].forEach(id => {
+    const el = $(id);
+    if (el) el.classList.remove('required-error');
+  });
+  ['diagnosisHelper','diagnosisProtocolHelper'].forEach(id => {
+    const el = $(id);
+    if (el) el.style.display = 'none';
+  });
+}
+function markRequiredError(id) {
+  const el = $(id);
+  if (el) el.classList.add('required-error');
+}
+function validateRequiredFields(data) {
+  clearRequiredErrors();
+
+  const missing = [];
+  const hn = String(data.hn || '').trim();
+  const patientName = String(data.patientName || '').trim();
+  const doctor = String(data.doctor || '').trim();
+  const ageText = String(data.age ?? '').trim();
+  const age = Number(ageText);
+  const hasDiagnosis = !!String(data.diagnosis || '').trim();
+  const hasProtocolDiagnosis = !!String(data.diagnosisProtocol || '').trim();
+
+  if (!hn) {
+    missing.push('HN');
+    markRequiredError('hn');
+  }
+  if (!patientName) {
+    missing.push('ชื่อ-สกุล');
+    markRequiredError('patientName');
+  }
+  if (!ageText || !Number.isFinite(age) || age < 0 || age > 120) {
+    missing.push('อายุ');
+    markRequiredError('age');
+  }
+  if (!doctor) {
+    missing.push('แพทย์ผู้ตรวจ');
+    markRequiredError('doctor');
+  }
+  if (!hasDiagnosis && !hasProtocolDiagnosis) {
+    missing.push('Diagnosis / Impression หรือ Protocol Diagnosis');
+    markRequiredError('diagnosis');
+    markRequiredError('diagnosisProtocol');
+    if ($('diagnosisHelper')) $('diagnosisHelper').style.display = 'block';
+    if ($('diagnosisProtocolHelper')) $('diagnosisProtocolHelper').style.display = 'block';
+  }
+
+  if (!missing.length) return true;
+
+  const firstId =
+    !hn ? 'hn' :
+    !patientName ? 'patientName' :
+    (!ageText || !Number.isFinite(age) || age < 0 || age > 120) ? 'age' :
+    !doctor ? 'doctor' :
+    'diagnosisProtocol';
+
+  Swal.fire({
+    icon:'warning',
+    title:'กรอกข้อมูลที่จำเป็นไม่ครบ',
+    html:`<div style="text-align:left">
+      <p style="margin-bottom:8px">กรุณากรอกข้อมูลต่อไปนี้ก่อนบันทึก:</p>
+      <ul style="padding-left:20px;list-style:disc">
+        ${missing.map(x => `<li>${escapeHtml(x)}</li>`).join('')}
+      </ul>
+    </div>`,
+    confirmButtonText:'กลับไปกรอก'
+  }).then(() => {
+    const el = $(firstId);
+    if (el) {
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      setTimeout(() => el.focus(), 250);
+    }
+  });
+  return false;
+}
+
+function saveRecord() {
+  const data = collectData();
+  if (!validateRequiredFields(data)) return;
+
+  const res = saveLocal(data);
+  Swal.fire({
+    icon:'success',
+    title:'บันทึกในเครื่องแล้ว',
+    text:`Record ID: ${res.recordId}`,
+    timer:1500,
+    showConfirmButton:false
+  });
+  refreshRecords();
+}
+function refreshRecords() {
+  const all = JSON.parse(localStorage.getItem(LOCAL_DB_KEY) || '[]');
+  const doctor = getValue('doctor');
+
+  cachedRecords = dashboardAdminMode
+    ? all
+    : all.filter(r => String(r.doctor || '').trim() === String(doctor || '').trim());
+
+  updateDashboardScopeBadge();
+  renderRecords();
+}
+function updateDashboardScopeBadge() {
+  const badge = $('dashboardScopeBadge');
+  if (!badge) return;
+  if (dashboardAdminMode) {
+    badge.textContent = 'ADMIN · ALL DOCTORS';
+    badge.className = 'rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800';
+  } else {
+    const doctor = getValue('doctor');
+    badge.textContent = doctor ? `Doctor: ${doctor}` : 'Doctor scope';
+    badge.className = 'rounded-full bg-teal-50 px-3 py-1 text-xs font-black text-teal-700';
+  }
+}
+function setDoctorDashboardScope() {
+  dashboardAdminMode = false;
+  refreshRecords();
+}
+function enableAdminDashboard() {
+  Swal.fire({
+    title:'Admin Dashboard',
+    text:'กรอกรหัสเพื่อดูข้อมูลทุกแพทย์ผู้ตรวจ',
+    input:'password',
+    inputPlaceholder:'Admin code',
+    showCancelButton:true,
+    confirmButtonText:'ดูทั้งหมด',
+    cancelButtonText:'ยกเลิก',
+    inputAttributes:{autocomplete:'off'},
+    preConfirm:(value) => {
+      if (String(value || '') !== DASHBOARD_ADMIN_CODE) {
+        Swal.showValidationMessage('รหัสไม่ถูกต้อง');
+        return false;
+      }
+      return true;
+    }
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    dashboardAdminMode = true;
+    refreshRecords();
+    Swal.fire({
+      toast:true,
+      position:'top-end',
+      icon:'success',
+      title:'Admin mode: ดูทุกแพทย์',
+      showConfirmButton:false,
+      timer:1400
+    });
+  });
+}
+function renderRecords() {
+  const rowsAll = cachedRecords || [];
+  const patientSet = new Set(rowsAll.map(r => String(r.hn || '').trim()).filter(Boolean));
+  const doctorSet = new Set(rowsAll.map(r => String(r.doctor || '').trim()).filter(Boolean));
+  if ($('dashRecordCount')) $('dashRecordCount').textContent = rowsAll.length;
+  if ($('dashPatientCount')) $('dashPatientCount').textContent = patientSet.size;
+  if ($('dashDoctorCount')) $('dashDoctorCount').textContent = doctorSet.size;
+  if ($('dashFollowupCount')) $('dashFollowupCount').textContent = rowsAll.filter(r => r.followUpDate).length;
+
+  const q = ($('recordSearch')?.value || '').toLowerCase().trim();
+  const rows = cachedRecords.filter(r => JSON.stringify(r).toLowerCase().includes(q));
+  $('recordsList').innerHTML = rows.length ? rows.slice(0,50).map(r => `
+    <div class="rounded-xl border border-slate-200 p-3">
+      <div class="flex items-start justify-between gap-3">
+        <button class="text-left" onclick='loadRecord(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
+          <div class="font-black text-slate-900">${escapeHtml(r.hn || '-')} · ${escapeHtml(r.patientName || '-')}</div>
+          <div class="mt-1 text-xs text-slate-500">${escapeHtml(prettyDate(r.visitDate || ''))} · ${escapeHtml(r.doctor || '-')} · ${escapeHtml(WORKFLOWS[r.workflow]?.short || r.workflow || '')}</div>
+          <div class="mt-1 line-clamp-2 text-xs text-slate-600">${escapeHtml(r.diagnosis || r.assessment || r.chiefComplaint || '')}</div>
+        </button>
+        <button onclick="deleteRecord('${escapeHtml(r.recordId)}')" class="rounded-lg border border-red-200 px-2 py-1 text-xs font-bold text-red-600">Delete</button>
+      </div>
+    </div>`).join('') : '<div class="py-6 text-center text-sm text-slate-400">ไม่พบ record ในขอบเขตการดูข้อมูลนี้</div>';
+}
+function clearDynamicUI() {
+  document.querySelectorAll('#dynamicSections input,#dynamicSections textarea,#dynamicSections select').forEach(el => {
+    if (el.type === 'checkbox') el.checked = false; else el.value = '';
+  });
+}
+function loadRecord(r) {
+  currentWorkflow = r.workflow || 'aub';
+  $('workflow').value = currentWorkflow;
+  renderWorkflow();
+
+  const simple = ['recordId','visitDate','hn','patientName','age','gp','lmp','chiefComplaint','doctor','triageNote','diagnosis','diagnosisIcd10','diagnosisStatus','differentialDiagnosis','treatmentDetails','assessment','plan','advice','followUpDate','followUpPlan'];
+  simple.forEach(id => { if ($(id)) $(id).value = r[id] || ''; });
+  renderDiagnosisOptions(r.diagnosisProtocol || '');
+  if ($('diagnosisProtocol')) $('diagnosisProtocol').value = r.diagnosisProtocol || '';
+  renderTreatmentSet(r.treatments || [], r.formularyMedicines || []);
+  if ($('customTreatmentRows')) $('customTreatmentRows').innerHTML = '';
+  (r.customTreatments || []).forEach(item => addCustomTreatmentRow(item));
+  redFlagOptions.forEach(([id]) => { if ($(id)) $(id).checked = !!r.redFlags?.[id]; });
+  Object.entries(r.dynamic || {}).forEach(([id,v]) => {
+    const el = $(id); if (!el) return;
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v || '';
+  });
+  $('extraSlots').innerHTML = '';
+  (r.extras || []).forEach(x => addExtraSlot(x.key,x.value));
+  noteManualOverride = false;
+  updateNote();
+  if (r.note && r.note.trim() !== lastGeneratedNote.trim()) {
+    $('notePreview').value = r.note;
+    noteManualOverride = true;
+    $('noteStatus').textContent = 'Edited';
+    $('noteStatus').className = 'rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700';
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteRecord(id) {
+  if (!id) return;
+  Swal.fire({
+    title:'ลบ record?',
+    text:id,
+    icon:'warning',
+    showCancelButton:true,
+    confirmButtonText:'ลบ',
+    cancelButtonText:'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    const all = JSON.parse(localStorage.getItem(LOCAL_DB_KEY) || '[]')
+      .filter(r => r.recordId !== id);
+    localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(all));
+    refreshRecords();
+  });
+}
+function doClear() {
+  noteManualOverride = false;
+  lastGeneratedNote = '';
+  $('recordId').value = '';
+  document.querySelectorAll('input,textarea').forEach(el => {
+    if (el.id === 'visitDate') return;
+    if (el.type === 'checkbox') el.checked = false;
+    else el.value = '';
+  });
+  ['diagnosisProtocol','diagnosisStatus'].forEach(id => { if ($(id)) $(id).value = ''; });
+  if ($('diagnosis')) delete $('diagnosis').dataset.autoValue;
+  renderTreatmentSet();
+  if ($('customTreatmentRows')) $('customTreatmentRows').innerHTML = '';
+  customTreatmentCounter = 0;
+  fillToday();
+  currentWorkflow = 'aub';
+  $('workflow').value = currentWorkflow;
+  renderWorkflow();
+  $('extraSlots').innerHTML = '';
+  updateNote();
+}
+function resetFormConfirm() {
+  Swal.fire({title:'ล้างฟอร์ม?',text:'ข้อมูลที่ยังไม่ได้บันทึกจะหายไป',icon:'question',showCancelButton:true,confirmButtonText:'ล้างฟอร์ม',cancelButtonText:'ยกเลิก'})
+    .then(r => { if (r.isConfirmed) doClear(); });
+}
+function exportJSON() {
+  const d = collectData();
+  const blob = new Blob([JSON.stringify(d,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${d.hn || 'GYN'}_${d.visitDate || 'record'}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+window.addEventListener('afterprint', () => $('printArea').classList.add('hidden'));
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
