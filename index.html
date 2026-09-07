@@ -208,8 +208,24 @@
             </label>
             <label>
               <span class="field-label">แพทย์ผู้ตรวจ <span class="required-mark">*</span></span>
-              <input id="doctor" class="input mt-1" placeholder="แพทย์ผู้ตรวจ" autocomplete="off" required />
-              <span class="required-helper">กรุณากรอกแพทย์ผู้ตรวจ</span>
+              <div class="mt-1 flex gap-2">
+                <select id="doctor" class="input" required>
+                  <option value="">— เลือกแพทย์ —</option>
+                </select>
+                <button type="button"
+                  onclick="addDoctorPopup()"
+                  class="no-print shrink-0 rounded-xl bg-teal-600 px-3 text-xs font-black text-white hover:bg-teal-700">
+                  + เพิ่มแพทย์
+                </button>
+                <button type="button"
+                  onclick="manageDoctorsPopup()"
+                  title="จัดการรายชื่อแพทย์"
+                  class="no-print shrink-0 rounded-xl border border-slate-200 px-3 text-xs font-black hover:bg-slate-50">
+                  จัดการ
+                </button>
+              </div>
+              <span class="required-helper">กรุณาเลือกแพทย์ผู้ตรวจ</span>
+              <span class="mt-1 block text-[11px] text-slate-500">รายชื่อแพทย์จะจำไว้ใน browser เครื่องนี้</span>
             </label>
           </div>
         </div>
@@ -441,6 +457,7 @@
 <script>
 const APP_TITLE = 'GYN Dynamic Form & OPD Note Generator';
 const LOCAL_DB_KEY = 'gyn_dynamic_form_records_v1';
+const DOCTOR_LIST_KEY = 'gyn_dynamic_form_doctors_v1';
 const CUSTOM_DX_KEY = 'gyn_custom_diagnoses_v1';
 
 // Generic medicine/form/strength transcribed from the hospital formulary dataset used by
@@ -919,6 +936,160 @@ function fillToday() {
   $('visitDate').value = new Date().toISOString().slice(0,10);
   updateNote();
 }
+
+function getSavedDoctors() {
+  let saved = [];
+  try {
+    saved = JSON.parse(localStorage.getItem(DOCTOR_LIST_KEY) || '[]');
+  } catch (_) {
+    saved = [];
+  }
+
+  // Backward compatibility: import doctor names from existing saved records.
+  let records = [];
+  try {
+    records = JSON.parse(localStorage.getItem(LOCAL_DB_KEY) || '[]');
+  } catch (_) {
+    records = [];
+  }
+
+  const merged = [
+    ...saved,
+    ...records.map(r => r.doctor)
+  ]
+    .map(x => String(x || '').trim())
+    .filter(Boolean)
+    .filter((name, index, arr) =>
+      arr.findIndex(x => x.toLocaleLowerCase('th-TH') === name.toLocaleLowerCase('th-TH')) === index
+    )
+    .sort((a,b) => a.localeCompare(b, 'th'));
+
+  if (JSON.stringify(saved) !== JSON.stringify(merged)) {
+    localStorage.setItem(DOCTOR_LIST_KEY, JSON.stringify(merged));
+  }
+  return merged;
+}
+
+function saveDoctorList(list) {
+  const clean = (list || [])
+    .map(x => String(x || '').trim())
+    .filter(Boolean)
+    .filter((name, index, arr) =>
+      arr.findIndex(x => x.toLocaleLowerCase('th-TH') === name.toLocaleLowerCase('th-TH')) === index
+    )
+    .sort((a,b) => a.localeCompare(b, 'th'));
+
+  localStorage.setItem(DOCTOR_LIST_KEY, JSON.stringify(clean));
+  return clean;
+}
+
+function renderDoctorOptions(selected='') {
+  const select = $('doctor');
+  if (!select) return;
+
+  const previous = selected || select.value || localStorage.getItem('gyn_last_doctor') || '';
+  const doctors = getSavedDoctors();
+
+  select.innerHTML =
+    '<option value="">— เลือกแพทย์ —</option>' +
+    doctors.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+
+  if (previous && doctors.includes(previous)) {
+    select.value = previous;
+  }
+
+  if (!select.dataset.doctorSelectBound) {
+    select.addEventListener('change', () => {
+      localStorage.setItem('gyn_last_doctor', select.value || '');
+      select.classList.remove('required-error');
+      updateNote();
+
+      if (!dashboardAdminMode && !$('recordsPanel')?.classList.contains('hidden')) {
+        refreshRecords();
+      }
+    });
+    select.dataset.doctorSelectBound = '1';
+  }
+}
+
+async function addDoctorPopup() {
+  const result = await Swal.fire({
+    title:'เพิ่มแพทย์ผู้ตรวจ',
+    input:'text',
+    inputLabel:'ชื่อแพทย์',
+    inputPlaceholder:'เช่น นพ.สมชาย ใจดี',
+    showCancelButton:true,
+    confirmButtonText:'เพิ่มและเลือก',
+    cancelButtonText:'ยกเลิก',
+    inputAttributes:{autocomplete:'off'},
+    inputValidator:value => {
+      if (!String(value || '').trim()) return 'กรุณากรอกชื่อแพทย์';
+    }
+  });
+
+  if (!result.isConfirmed) return;
+
+  const name = String(result.value || '').trim();
+  const doctors = getSavedDoctors();
+
+  if (!doctors.some(x => x.toLocaleLowerCase('th-TH') === name.toLocaleLowerCase('th-TH'))) {
+    doctors.push(name);
+    saveDoctorList(doctors);
+  }
+
+  renderDoctorOptions(name);
+  localStorage.setItem('gyn_last_doctor', name);
+  updateNote();
+
+  Swal.fire({
+    toast:true,
+    position:'top-end',
+    icon:'success',
+    title:`เพิ่ม ${name} แล้ว`,
+    showConfirmButton:false,
+    timer:1300
+  });
+}
+
+async function manageDoctorsPopup() {
+  const doctors = getSavedDoctors();
+  if (!doctors.length) {
+    await Swal.fire({icon:'info',title:'ยังไม่มีรายชื่อแพทย์'});
+    return;
+  }
+
+  const options = Object.fromEntries(doctors.map(x => [x, x]));
+  const result = await Swal.fire({
+    title:'ลบรายชื่อแพทย์',
+    input:'select',
+    inputOptions:options,
+    inputPlaceholder:'— เลือกชื่อที่ต้องการลบ —',
+    showCancelButton:true,
+    confirmButtonText:'ลบชื่อ',
+    cancelButtonText:'ยกเลิก'
+  });
+
+  if (!result.isConfirmed || !result.value) return;
+
+  const removeName = String(result.value);
+  const next = doctors.filter(x => x !== removeName);
+  saveDoctorList(next);
+
+  if ($('doctor')?.value === removeName) {
+    localStorage.removeItem('gyn_last_doctor');
+  }
+  renderDoctorOptions();
+
+  Swal.fire({
+    toast:true,
+    position:'top-end',
+    icon:'success',
+    title:'ลบรายชื่อแล้ว',
+    showConfirmButton:false,
+    timer:1200
+  });
+}
+
 function init() {
   fillToday();
   renderRedFlags();
@@ -926,6 +1097,7 @@ function init() {
   renderWorkflow();
   renderDiagnosisOptions();
   renderTreatmentSet();
+  renderDoctorOptions();
   bindLiveUpdate();
   document.addEventListener('input', e => {
     if (e.target?.classList?.contains('required-error')) e.target.classList.remove('required-error');
@@ -939,12 +1111,6 @@ function init() {
       if (getValue('diagnosis') || getValue('diagnosisProtocol')) clearRequiredErrors();
     }
   });
-  if ($('doctor') && !$('doctor').dataset.dashboardBound) {
-    $('doctor').addEventListener('change', () => {
-      if (!dashboardAdminMode && !$('recordsPanel')?.classList.contains('hidden')) refreshRecords();
-    });
-    $('doctor').dataset.dashboardBound = '1';
-  }
   detectMode();
   syncThemeButton();
   bindEditableNote();
@@ -1647,8 +1813,20 @@ function loadRecord(r) {
   $('workflow').value = currentWorkflow;
   renderWorkflow();
 
-  const simple = ['recordId','visitDate','hn','patientName','age','gp','lmp','chiefComplaint','doctor','triageNote','diagnosis','diagnosisIcd10','diagnosisStatus','differentialDiagnosis','treatmentDetails','assessment','plan','advice','followUpDate','followUpPlan'];
+  const simple = ['recordId','visitDate','hn','patientName','age','gp','lmp','chiefComplaint','triageNote','diagnosis','diagnosisIcd10','diagnosisStatus','differentialDiagnosis','treatmentDetails','assessment','plan','advice','followUpDate','followUpPlan'];
   simple.forEach(id => { if ($(id)) $(id).value = r[id] || ''; });
+
+  if (r.doctor) {
+    const doctors = getSavedDoctors();
+    if (!doctors.some(x => x.toLocaleLowerCase('th-TH') === String(r.doctor).toLocaleLowerCase('th-TH'))) {
+      doctors.push(String(r.doctor));
+      saveDoctorList(doctors);
+    }
+    renderDoctorOptions(String(r.doctor));
+    localStorage.setItem('gyn_last_doctor', String(r.doctor));
+  } else {
+    renderDoctorOptions();
+  }
   renderDiagnosisOptions(r.diagnosisProtocol || '');
   if ($('diagnosisProtocol')) $('diagnosisProtocol').value = r.diagnosisProtocol || '';
   renderTreatmentSet(r.treatments || [], r.formularyMedicines || []);
@@ -1689,6 +1867,7 @@ function deleteRecord(id) {
   });
 }
 function doClear() {
+  const selectedDoctor = getValue('doctor');
   noteManualOverride = false;
   lastGeneratedNote = '';
   $('recordId').value = '';
@@ -1707,6 +1886,7 @@ function doClear() {
   $('workflow').value = currentWorkflow;
   renderWorkflow();
   $('extraSlots').innerHTML = '';
+  renderDoctorOptions(selectedDoctor);
   updateNote();
 }
 function resetFormConfirm() {
